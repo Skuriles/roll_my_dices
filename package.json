@@ -4,15 +4,26 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prod": "tsc && node ./build/app.js",
+    "dev": "ts-node-dev --respawn --inspect -- ./app/app.ts",
+    "tsc": "tsc"
   },
   "author": "Bene Caspari",
   "license": "ISC",
   "dependencies": {
+    "@types/express": "^4.17.11",
+    "@types/ws": "^7.4.0",
     "bcrypt": "^5.0.0",
     "express": "^4.17.1",
     "lodash-id": "^0.14.0",
     "lowdb": "^1.0.0",
+    "ts-node-dev": "^1.1.1",
+    "typescript": "^4.1.5",
     "ws": "^7.4.3"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^3.0.0",
+    "@types/lodash": "^4.14.168",
+    "@types/lowdb": "^1.0.9"
   }
 }

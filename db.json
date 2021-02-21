@@ -1,36 +1,26 @@
 {
   "tables": [
     {
-      "id": "67a02608-e5d2-42f5-8aa7-d8780271792d",
+      "id": "9a09159c-02f0-401e-b741-f4c30a72214f",
       "name": "Tisch1",
       "maxplayers": 5,
       "minplayers": 2,
-      "players": [
-        {
-          "id": "175ea5a5-3901-4d99-85e2-6174df9b7a6f",
-          "name": "Bene",
-          "pw": "$2b$10$fOVtF10npux8cG9OYD7OJ.3X8q5Ic8LsuxFWfLX2e5GS3THNzoR7i"
-        },
-        {
-          "id": "c77d85ad-e0dc-4521-8f35-0cf4fb966708",
-          "name": "Alex",
-          "pw": "$2b$10$ztB54wbshgWJXhgTZLCrbe02wkTMDPn0IkYZfX5ChQI9rR7Pojy2y"
-        }
-      ],
       "locked": false,
-      "names": []
+      "diceCount": 5,
+      "round": 1,
+      "started": true,
+      "playerIds": [],
+      "waiting": true
     }
   ],
   "players": [
     {
-      "id": "175ea5a5-3901-4d99-85e2-6174df9b7a6f",
+      "id": "676c9cf3-932e-4d96-84bf-c8a5138676ff",
+      "diced": false,
+      "result": [],
+      "openCup": false,
       "name": "Bene",
-      "pw": "$2b$10$fOVtF10npux8cG9OYD7OJ.3X8q5Ic8LsuxFWfLX2e5GS3THNzoR7i"
-    },
-    {
-      "id": "c77d85ad-e0dc-4521-8f35-0cf4fb966708",
-      "name": "Alex",
-      "pw": "$2b$10$ztB54wbshgWJXhgTZLCrbe02wkTMDPn0IkYZfX5ChQI9rR7Pojy2y"
+      "pw": "$2b$10$TmRNMpb1f3XuiLqs2Axd9u6ZDaJ3hl2nOcn8.5rX0HOD7AHJ9Raki"
     }
   ]
 }
