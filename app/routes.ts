@@ -36,6 +36,8 @@ export class Routes {
       .route("/removePlayer")
       .post((req, res) => db.removePlayer(req, res));
     this.router.route("/lockTable").post((req, res) => db.addTable(req, res));
+    this.router.route("/startGame").post((req, res) => db.startGame(req, res));
+    this.router.route("/nextRound").post((req, res) => db.nextRound(req, res));
   }
   // router.route('/').get((req, res) =>  db.start(req,res));
   // router.route('*').get((req, res) =>  db.start(req,res));

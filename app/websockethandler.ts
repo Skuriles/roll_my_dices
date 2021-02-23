@@ -4,9 +4,10 @@ import http = require("http");
 import { IExtWebSocket } from "./IWebsocket";
 import { PlayerClient } from "./playerClient";
 import { Player } from "./player";
-import { Table } from "./table";
+import { RoundResult } from "./roundResult";
 // import { GameHandler } from "./gamehandler";
 import { Db } from "./db";
+import { PlayerTable } from "./playerTable";
 
 export class WebsocketHandler {
   CLIENTS: PlayerClient[] = [];
@@ -69,38 +70,40 @@ export class WebsocketHandler {
       case "openCups":
         this.handleOpenCups(message, ws);
         break;
-      case "newGame":
-        this.handleNewGame(message.params, ws);
-        break;
       default:
         break;
     }
   }
 
-  handleNewGame(params: string[], ws: IExtWebSocket): void {
-    const tableId: string = params[0];
-    const table: Table = this.db.getTableSingle(tableId);
-    // gamehandler.createGameFromNewTable(table, params[1], []);
+  handleOpenCups(message: Message, ws: IExtWebSocket): void {
+    const dice: number = message.params[0];
+    const count: number = message.params[1];
+    const fromPlayerId: string = message.params[2];
+    const tableId: string = message.params[3];
+    const player = this.getPlayerFromClient(ws);
+    this.db.openCups(dice, count, fromPlayerId, tableId, player as Player);
   }
 
-  handleOpenCups(message: Message, ws: IExtWebSocket): void {
-    let dice: number | string = 0;
-    let count: number | string = 0;
-    let tableId: number | string = "";
-    for (let i: number = 0; i < message.params.length; i++) {
-      const param: number | string = message.params[i];
-      if (i === 0) {
-        dice = param;
+  sendRoundResult(res: RoundResult, players: Player[]) {
+    this.wss.clients.forEach((client) => {
+      if (
+        this.isValidPlayer(
+          client,
+          players.map((p) => p.id)
+        )
+      ) {
+        client.send(
+          this.createMessage("sendRoundResult", [
+            res.success,
+            res.diceCount,
+            res.dice,
+            res.count,
+            res.playerName,
+            res.fromPlayer,
+          ])
+        );
       }
-      if (i === 1) {
-        count = param;
-      }
-      if (i === 2) {
-        tableId = param;
-      }
-      // ameHandler.openCups(dice, count, tableId);
-      // this.db.openCups();
-    }
+    });
   }
 
   handleRegister(message: Message, ws: IExtWebSocket): void {
@@ -114,19 +117,15 @@ export class WebsocketHandler {
   }
 
   handleDiceResult(message: Message, ws: IExtWebSocket): void {
-    const tableId: string = message.params[0];
-    const table: Table = this.db.getTableSingle(tableId);
-    const players: Player[] = this.db.getPlayersFromTable(tableId);
-    const dices: number[] = [];
-    for (const param of message.params) {
-      dices.push(param);
-    }
-    table.getDiceResult(message.sender, message.params, players);
+    const playerIds = this.db.getDiceResult(
+      message.params[0],
+      message.params[1],
+      message.params
+    );
+
     this.wss.clients.forEach((client) => {
-      if (client !== ws) {
-        if (this.isValidPlayer(client, players)) {
-          client.send(this.createMessage("playerResult", [message.sender]));
-        }
+      if (this.isValidPlayer(client, playerIds)) {
+        client.send(this.createMessage("playerResult", [message.sender]));
       }
     });
   }
@@ -174,10 +173,10 @@ export class WebsocketHandler {
     }
   }
 
-  isValidPlayer(client: WebSocket, players: Player[]): boolean {
+  isValidPlayer(client: WebSocket, playerIds: string[]): boolean {
     for (const ws of this.CLIENTS) {
-      for (const player of players) {
-        if (ws.playerId === player.id) {
+      for (const plId of playerIds) {
+        if (ws.playerId === plId) {
           return true;
         }
       }
@@ -185,19 +184,57 @@ export class WebsocketHandler {
     return false;
   }
 
-  newPlayerAtTable(playerId: string, tableId: string): void {
+  newPlayerAtTable(
+    playerId: string,
+    playerName: string,
+    tableId: string
+  ): void {
     const players: Player[] = this.db.getPlayersFromTable(tableId);
     this.wss.clients.forEach((client) => {
-      if (this.isValidPlayer(client, players)) {
-        client.send(this.createMessage("newPlayer", [playerId, tableId]));
+      if (
+        this.isValidPlayer(
+          client,
+          players.map((p) => p.id)
+        )
+      ) {
+        client.send(
+          this.createMessage("newPlayer", [playerId, playerName, tableId])
+        );
       }
     });
   }
 
-  removePlayerFromTable(tableId: string): void {
-    const players: Player[] = this.db.getPlayersFromTable(tableId);
+  removePlayerFromTable(playerId: string): void {
     this.wss.clients.forEach((client) => {
-      client.send(this.createMessage("playerOffline", [tableId]));
+      client.send(this.createMessage("playerOffline", [playerId]));
     });
+  }
+
+  startGame(tableId: string) {
+    this.wss.clients.forEach((client) => {
+      client.send(this.createMessage("gameStarted", [tableId]));
+    });
+  }
+
+  allPlayersDiced(tableId: string, players: Player[]) {
+    this.wss.clients.forEach((client) => {
+      if (
+        this.isValidPlayer(
+          client,
+          players.map((p) => p.id)
+        )
+      ) {
+        client.send(this.createMessage("allPlayersDiced", [tableId]));
+      }
+    });
+  }
+
+  getPlayerFromClient(client: IExtWebSocket): Player | null {
+    for (const cl of this.CLIENTS) {
+      if (cl.client === client) {
+        return this.db.getPlayerById(cl.playerId);
+      }
+    }
+    return null;
   }
 }

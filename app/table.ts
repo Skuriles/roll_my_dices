@@ -11,6 +11,7 @@ export class Table {
   started: boolean;
   playerIds: string[];
   waiting: boolean;
+  roundFinished: boolean;
   constructor(
     name: string,
     maxplayers: number,
@@ -23,9 +24,10 @@ export class Table {
     this.locked = false;
     this.diceCount = diceCount;
     this.round = 1;
-    this.started = true;
+    this.started = false;
     this.playerIds = [];
     this.waiting = true;
+    this.roundFinished = false;
   }
 
   // playRound = () => {
@@ -37,30 +39,4 @@ export class Table {
   //   }
   //   this.waiting = true;
   // };
-
-  getDiceResult = (playerId: string, result: number[], players: Player[]) => {
-    let finished: boolean = true;
-    for (const player of players) {
-      if (player.id === playerId) {
-        player.diced = true;
-        player.result = result;
-      }
-      if (!player.diced) {
-        finished = false;
-      }
-    }
-    if (finished) {
-      this.setRoundDiced();
-    }
-  };
-
-  setRoundDiced = () => {
-    this.waiting = false;
-  };
-
-  openCups = (dice: number, count: number, players: Player[]) => {
-    for (const player of players) {
-      player.openCup = true;
-    }
-  };
 }

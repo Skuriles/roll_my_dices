@@ -7,20 +7,48 @@
       "minplayers": 2,
       "locked": false,
       "diceCount": 5,
-      "round": 1,
       "started": true,
-      "playerIds": [],
-      "waiting": true
+      "playerIds": [
+        "676c9cf3-932e-4d96-84bf-c8a5138676ff",
+        "e0877d0a-c7e8-449f-af8f-70fb8389e7ae"
+      ],
+      "waiting": false,
+      "round": 1,
+      "roundFinished": true
     }
   ],
   "players": [
     {
       "id": "676c9cf3-932e-4d96-84bf-c8a5138676ff",
-      "diced": false,
-      "result": [],
-      "openCup": false,
+      "diced": true,
+      "result": [
+        6,
+        2,
+        5,
+        2,
+        2
+      ],
+      "openCup": true,
       "name": "Bene",
-      "pw": "$2b$10$TmRNMpb1f3XuiLqs2Axd9u6ZDaJ3hl2nOcn8.5rX0HOD7AHJ9Raki"
+      "pw": "$2b$10$TmRNMpb1f3XuiLqs2Axd9u6ZDaJ3hl2nOcn8.5rX0HOD7AHJ9Raki",
+      "won": false,
+      "dices": -1
+    },
+    {
+      "id": "e0877d0a-c7e8-449f-af8f-70fb8389e7ae",
+      "diced": true,
+      "result": [
+        1,
+        3,
+        4,
+        4,
+        2
+      ],
+      "openCup": true,
+      "name": "Alex",
+      "pw": "$2b$10$U5o6B9wqqYBBV5MJTYzv0..PKM9veLY62MJ4pNCetK.qHyTYzIIyW",
+      "won": false,
+      "dices": 0
     }
   ]
 }

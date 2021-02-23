@@ -5,6 +5,8 @@ import { Db } from "./db";
 import path = require("path");
 import { Gamehandler } from "./gamehandler";
 import { WebsocketHandler } from "./websockethandler";
+import { Player } from "./player";
+import { RoundResult } from "./roundResult";
 
 export class BaseApp {
   db: Db;
@@ -28,14 +30,30 @@ export class BaseApp {
   }
 
   cleanOut(): void {
-    this.db.removeAllPlayersFromTable();
+    this.db.resetAfterStart();
   }
 
-  newPlayerAtTable(playerId: string, tableId: string): void {
-    this.websocketHandler.newPlayerAtTable(playerId, tableId);
+  newPlayerAtTable(
+    playerId: string,
+    playerName: string,
+    tableId: string
+  ): void {
+    this.websocketHandler.newPlayerAtTable(playerId, playerName, tableId);
   }
   removePlayerFromTable(playerId: string): void {
     this.websocketHandler.removePlayerFromTable(playerId);
+  }
+
+  startGame(tableId: string) {
+    this.websocketHandler.startGame(tableId);
+  }
+
+  allPlayersDiced(tableId: string, players: Player[]) {
+    this.websocketHandler.allPlayersDiced(tableId, players);
+  }
+
+  sendRoundResult(res: RoundResult, players: Player[]) {
+    this.websocketHandler.sendRoundResult(res, players);
   }
 }
 
