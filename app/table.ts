@@ -12,6 +12,8 @@ export class Table {
   playerIds: string[];
   waiting: boolean;
   roundFinished: boolean;
+  gameFinished: boolean;
+
   constructor(
     name: string,
     maxplayers: number,
@@ -28,6 +30,7 @@ export class Table {
     this.playerIds = [];
     this.waiting = true;
     this.roundFinished = false;
+    this.gameFinished = false;
   }
 
   // playRound = () => {

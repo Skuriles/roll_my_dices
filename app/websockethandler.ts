@@ -8,6 +8,7 @@ import { RoundResult } from "./roundResult";
 // import { GameHandler } from "./gamehandler";
 import { Db } from "./db";
 import { PlayerTable } from "./playerTable";
+import { Table } from "./table";
 
 export class WebsocketHandler {
   CLIENTS: PlayerClient[] = [];
@@ -80,8 +81,8 @@ export class WebsocketHandler {
     const count: number = message.params[1];
     const fromPlayerId: string = message.params[2];
     const tableId: string = message.params[3];
-    const player = this.getPlayerFromClient(ws);
-    this.db.openCups(dice, count, fromPlayerId, tableId, player as Player);
+    const playerId: string = message.params[4];
+    this.db.openCups(dice, count, fromPlayerId, tableId, playerId);
   }
 
   sendRoundResult(res: RoundResult, players: Player[]) {
@@ -100,6 +101,7 @@ export class WebsocketHandler {
             res.count,
             res.playerName,
             res.fromPlayer,
+            res.gameFinished,
           ])
         );
       }
@@ -229,12 +231,43 @@ export class WebsocketHandler {
     });
   }
 
-  getPlayerFromClient(client: IExtWebSocket): Player | null {
-    for (const cl of this.CLIENTS) {
-      if (cl.client === client) {
-        return this.db.getPlayerById(cl.playerId);
+  nextRound(table: Table) {
+    const players = this.db.getPlayersFromTable(table.id);
+    this.wss.clients.forEach((client) => {
+      if (
+        this.isValidPlayer(
+          client,
+          players.map((p) => p.id)
+        )
+      ) {
+        client.send(this.createMessage("newRound", [table]));
       }
-    }
-    return null;
+    });
+  }
+
+  playerFinished(players: Player[]) {
+    this.wss.clients.forEach((client) => {
+      if (
+        this.isValidPlayer(
+          client,
+          players.map((p) => p.id)
+        )
+      ) {
+        client.send(this.createMessage("playerFinished", [players]));
+      }
+    });
+  }
+
+  gameFinished(tableId: string, players: Player[]) {
+    this.wss.clients.forEach((client) => {
+      if (
+        this.isValidPlayer(
+          client,
+          players.map((p) => p.id)
+        )
+      ) {
+        client.send(this.createMessage("gameFinished", [tableId]));
+      }
+    });
   }
 }

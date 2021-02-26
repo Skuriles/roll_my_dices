@@ -7,6 +7,7 @@ import { Gamehandler } from "./gamehandler";
 import { WebsocketHandler } from "./websockethandler";
 import { Player } from "./player";
 import { RoundResult } from "./roundResult";
+import { Table } from "./table";
 
 export class BaseApp {
   db: Db;
@@ -54,6 +55,18 @@ export class BaseApp {
 
   sendRoundResult(res: RoundResult, players: Player[]) {
     this.websocketHandler.sendRoundResult(res, players);
+  }
+
+  newRound(table: Table) {
+    this.websocketHandler.nextRound(table);
+  }
+
+  playerIsFinished(players: Player[]) {
+    this.websocketHandler.playerFinished(players);
+  }
+
+  sendGameFinished(tableId: string, players: Player[]) {
+    this.websocketHandler.gameFinished(tableId, players);
   }
 }
 

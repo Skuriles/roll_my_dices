@@ -195,14 +195,15 @@ export class Db {
 
   startGame(req: Request, res: Response): void {
     const tableId: string = req.body.tableId;
-    const table = this.db.get("tables").getById(tableId);
+    const table = this.db.get("tables").getById(tableId).value();
     this.db.get("tables").getById(tableId).assign({ started: true }).write();
     const players = this.getPlayersFromTable(tableId);
     for (const player of players) {
       this.db
         .get("players")
         .getById(player.id)
-        .assign({ won: false, dices: table.diceCount });
+        .assign({ won: false, dices: table.diceCount })
+        .write();
     }
     this.baseApp.startGame(tableId);
     res.end();
@@ -214,11 +215,23 @@ export class Db {
     this.db
       .get("tables")
       .getById(tableId)
-      .assign({ round: ++round, roundFinished: false })
+      .assign({ round: ++round, roundFinished: false, waiting: true })
       .write();
+    const players = this.getPlayersFromTable(tableId);
+    for (const player of players) {
+      this.resetPlayerValues(player.id);
+    }
     const table: Table = this.db.get("tables").getById(tableId).value();
-    table.waiting = true;
-    res.send(table);
+    this.baseApp.newRound(table);
+    res.end();
+  }
+
+  resetPlayerValues(playerId: string) {
+    this.db
+      .get("players")
+      .getById(playerId)
+      .assign({ diced: false, openCup: false, result: [] })
+      .write();
   }
 
   getPlayersFromTable(tableId: string): Player[] {
@@ -254,17 +267,22 @@ export class Db {
   resetTableValues(): void {
     const tables: Table[] = this.db.get("tables").value();
     for (const table of tables) {
-      this.db
-        .get("tables")
-        .getById(table.id)
-        .assign({
-          round: 1,
-          started: false,
-          waiting: true,
-          roundFinished: false,
-        })
-        .write();
+      this.resetTableById(table.id);
     }
+  }
+
+  private resetTableById(tableId: string) {
+    this.db
+      .get("tables")
+      .getById(tableId)
+      .assign({
+        round: 1,
+        started: false,
+        waiting: true,
+        roundFinished: false,
+        gameFinished: false,
+      })
+      .write();
   }
 
   getDiceResult(tableId: string, playerId: string, params: any[]): string[] {
@@ -282,6 +300,9 @@ export class Db {
           .getById(playerId)
           .assign({ diced: true, result: dices })
           .write();
+        continue;
+      }
+      if (player.won) {
         continue;
       }
       if (!player.diced) {
@@ -307,17 +328,23 @@ export class Db {
     count: number,
     fromPlayerId: string,
     tableId: string,
-    playerRes: Player
+    playerId: string
   ): void {
     const players = this.getPlayersFromTable(tableId);
-    const table = this.db
+    const playersFinished: Player[] = [];
+    let gameFinished = false;
+    this.db
       .get("tables")
       .getById(tableId)
       .assign({ roundFinished: true })
       .write();
     let diceCount = 0;
     let fromPlayer: string = "";
+    let playerRes: string = "";
     for (const player of players) {
+      if (player.id === playerId) {
+        playerRes = player.name;
+      }
       if (fromPlayerId === player.id) {
         fromPlayer = player.name;
         this.db
@@ -331,12 +358,13 @@ export class Db {
           .getById(player.id)
           .get("dices")
           .value();
-        if (diceCount === 1) {
+        if (dices === 1) {
           this.db
             .get("players")
             .getById(player.id)
             .assign({ openCup: true, dices: --dices, won: true })
             .write();
+          playersFinished.push(player);
         } else {
           this.db
             .get("players")
@@ -344,6 +372,10 @@ export class Db {
             .assign({ openCup: true, dices: --dices })
             .write();
         }
+      }
+      if (playersFinished.length > 0) {
+        this.baseApp.playerIsFinished(playersFinished);
+        gameFinished = this.checkGameFinished(tableId);
       }
       for (const di of player.result) {
         if (di === 1 || di === dice) {
@@ -356,10 +388,33 @@ export class Db {
       diceCount,
       dice,
       count,
-      playerRes.name
+      playerRes,
+      gameFinished,
+      fromPlayer
     );
-    rResult.fromPlayer = fromPlayer;
     this.baseApp.sendRoundResult(rResult, players);
+  }
+
+  checkGameFinished(tableId: string): boolean {
+    const players = this.getPlayersFromTable(tableId);
+    let count = 0;
+    for (const pl of players) {
+      if (pl.won) {
+        continue;
+      } else {
+        count++;
+      }
+    }
+    if (count === 1) {
+      this.db
+        .get("tables")
+        .getById(tableId)
+        .assign({ gameFinished: true, started: false })
+        .write();
+      this.baseApp.sendGameFinished(tableId, players);
+      return true;
+    }
+    return false;
   }
 
   getTableSingle(tableId: string): Table {
@@ -381,6 +436,10 @@ export class Db {
         .get("playerIds")
         .remove((item: string) => item === playerId)
         .write();
+      const players = this.getPlayersFromTable(table.id);
+      if (!players || players.length === 0) {
+        this.resetTableById(table.id);
+      }
     }
   }
 
@@ -396,6 +455,7 @@ export class Db {
     }
     const pl: Player = this.db.get("players").getById(playerId).value();
     if (pl) {
+      this.resetPlayerValues(pl.id);
       const plIds = table.get("playerIds");
       plIds.push(pl.id).write();
     }
