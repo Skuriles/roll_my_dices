@@ -30,14 +30,18 @@ export class Routes {
     this.router.route("/getTables").post((req, res) => db.getTables(req, res));
     this.router.route("/getTable").post((req, res) => db.getTable(req, res));
     this.router.route("/addTable").post((req, res) => db.addTable(req, res));
-    this.router.route("/removeTable").post((req, res) => db.addTable(req, res));
-    this.router.route("/addPlayer").post((req, res) => db.addTable(req, res));
+    this.router
+      .route("/removeTable")
+      .post((req, res) => db.removeTable(req, res));
     this.router
       .route("/removePlayer")
       .post((req, res) => db.removePlayer(req, res));
-    this.router.route("/lockTable").post((req, res) => db.addTable(req, res));
+    this.router.route("/lockTable").post((req, res) => db.lockTable(req, res));
     this.router.route("/startGame").post((req, res) => db.startGame(req, res));
     this.router.route("/nextRound").post((req, res) => db.nextRound(req, res));
+    this.router
+      .route("/updateTable")
+      .post((req, res) => db.updateTable(req, res));
   }
   // router.route('/').get((req, res) =>  db.start(req,res));
   // router.route('*').get((req, res) =>  db.start(req,res));

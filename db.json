@@ -1,72 +1,74 @@
 {
   "tables": [
     {
-      "id": "9a09159c-02f0-401e-b741-f4c30a72214f",
+      "id": "5c5fc9f4-3ea6-4ffa-ab4b-4fa8f893ae63",
       "name": "Tisch1",
       "maxplayers": 5,
       "minplayers": 2,
       "locked": false,
       "diceCount": 5,
-      "started": false,
-      "playerIds": [],
-      "waiting": true,
-      "round": 1,
-      "roundFinished": false,
-      "gameFinished": false
-    },
-    {
-      "id": "de76b3e4-9b9d-4cca-b284-4d281afd99ff",
-      "name": "tisch2",
-      "maxplayers": 5,
-      "minplayers": 2,
-      "locked": false,
-      "diceCount": 2,
       "round": 3,
-      "started": true,
+      "started": false,
       "playerIds": [
-        "e0877d0a-c7e8-449f-af8f-70fb8389e7ae",
         "676c9cf3-932e-4d96-84bf-c8a5138676ff",
-        "e1ba1541-6190-4065-94fa-60fe7adf69d5"
+        "e0877d0a-c7e8-449f-af8f-70fb8389e7ae"
       ],
       "waiting": false,
       "roundFinished": true,
       "gameFinished": true
+    },
+    {
+      "id": "9d466a0e-5f27-4422-93fa-357c4f31196a",
+      "name": "Tisch3",
+      "maxplayers": 15,
+      "minplayers": 2,
+      "locked": false,
+      "diceCount": 3,
+      "round": 1,
+      "started": false,
+      "playerIds": [],
+      "waiting": true,
+      "roundFinished": false,
+      "gameFinished": false
     }
   ],
   "players": [
     {
       "id": "676c9cf3-932e-4d96-84bf-c8a5138676ff",
-      "diced": false,
-      "result": [],
+      "diced": true,
+      "result": [
+        3
+      ],
       "openCup": true,
       "name": "Bene",
       "pw": "$2b$10$TmRNMpb1f3XuiLqs2Axd9u6ZDaJ3hl2nOcn8.5rX0HOD7AHJ9Raki",
-      "won": false,
-      "dices": 2
+      "won": true,
+      "dices": 0
     },
     {
       "id": "e0877d0a-c7e8-449f-af8f-70fb8389e7ae",
       "diced": true,
       "result": [
-        5
+        5,
+        6,
+        4,
+        3
       ],
       "openCup": true,
       "name": "Alex",
       "pw": "$2b$10$U5o6B9wqqYBBV5MJTYzv0..PKM9veLY62MJ4pNCetK.qHyTYzIIyW",
       "won": false,
-      "dices": 2
+      "dices": 4
     },
     {
       "id": "e1ba1541-6190-4065-94fa-60fe7adf69d5",
-      "diced": true,
-      "result": [
-        4
-      ],
-      "openCup": true,
+      "diced": false,
+      "result": [],
+      "openCup": false,
       "won": false,
       "name": "Andy",
       "pw": "$2b$10$bcme3eZgqOUzks.rwmgtze.I1ZVm8jxOgsM6NtWn/scU4do0a.TQO",
-      "dices": 2
+      "dices": 0
     }
   ]
 }

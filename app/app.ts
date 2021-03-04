@@ -68,6 +68,14 @@ export class BaseApp {
   sendGameFinished(tableId: string, players: Player[]) {
     this.websocketHandler.gameFinished(tableId, players);
   }
+
+  sendTableLocked(tableId: string, lock: boolean) {
+    this.websocketHandler.tableLocked(tableId, lock);
+  }
+
+  sendTableCorrection(tableId: string) {
+    this.websocketHandler.tableCorrection(tableId);
+  }
 }
 
 const myApp = new BaseApp();

@@ -270,4 +270,32 @@ export class WebsocketHandler {
       }
     });
   }
+
+  tableLocked(tableId: string, lock: boolean) {
+    const players = this.db.getPlayersFromTable(tableId);
+    this.wss.clients.forEach((client) => {
+      if (
+        this.isValidPlayer(
+          client,
+          players.map((p) => p.id)
+        )
+      ) {
+        client.send(this.createMessage("tableLocked", [tableId, lock]));
+      }
+    });
+  }
+
+  tableCorrection(tableId: string) {
+    const players = this.db.getPlayersFromTable(tableId);
+    this.wss.clients.forEach((client) => {
+      if (
+        this.isValidPlayer(
+          client,
+          players.map((p) => p.id)
+        )
+      ) {
+        client.send(this.createMessage("tableCorrection", [tableId]));
+      }
+    });
+  }
 }

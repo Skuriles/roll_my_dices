@@ -4,6 +4,7 @@ const lodashId = require("lodash-id");
 import FileSync = require("lowdb/adapters/FileSync");
 import { Table } from "./table";
 import { Player } from "./player";
+import { ChangedTable } from "./changedTable";
 import { Gamehandler } from "./gamehandler";
 import bcrypt = require("bcrypt");
 import { BaseApp } from "./app.js";
@@ -148,19 +149,22 @@ export class Db {
   }
 
   lockTable(req: Request, res: Response): void {
-    const body: Table = req.body;
-    this.db
-      .get("tables")
-      .find({ id: body.id })
-      .set("locked", body.locked)
-      .write();
+    const tableId: string = req.body.tableId;
+    const lock: boolean = req.body.lock;
+    this.db.get("tables").getById(tableId).assign({ locked: lock }).write();
+    this.baseApp.sendTableLocked(tableId, lock);
     res.end();
   }
 
   removeTable(req: Request, res: Response): void {
-    const body: Table = req.body;
-    this.db.get("tables").remove({ id: body.id }).write();
-    res.end();
+    const tableId: string = req.body.tableId;
+    const table: Table = this.db.get("tables").getById(tableId).value();
+    if (!table.playerIds || table.playerIds.length === 0) {
+      this.db.get("tables").remove({ id: tableId }).write();
+      res.send(true);
+      return;
+    }
+    res.send(false);
   }
 
   removePlayer(req: Request, res: Response): void {
@@ -195,18 +199,41 @@ export class Db {
 
   startGame(req: Request, res: Response): void {
     const tableId: string = req.body.tableId;
+    this.resetTableById(tableId);
     const table = this.db.get("tables").getById(tableId).value();
     this.db.get("tables").getById(tableId).assign({ started: true }).write();
     const players = this.getPlayersFromTable(tableId);
     for (const player of players) {
+      this.resetPlayerValues(player.id);
       this.db
         .get("players")
         .getById(player.id)
-        .assign({ won: false, dices: table.diceCount })
+        .assign({ dices: table.diceCount })
         .write();
     }
     this.baseApp.startGame(tableId);
     res.end();
+  }
+
+  updateTable(req: Request, res: Response): void {
+    const changed: ChangedTable = req.body.changed as ChangedTable;
+    this.db
+      .get("tables")
+      .getById(changed.table.id)
+      .assign({
+        minplayers: changed.table.minplayers,
+        maxplayers: changed.table.maxplayers,
+        diceCount: changed.table.diceCount,
+      })
+      .write();
+    for (const cPl of changed.players) {
+      this.db
+        .get("players")
+        .getById(cPl.id)
+        .assign({ dices: cPl.dices })
+        .write();
+    }
+    this.baseApp.sendTableCorrection(changed.table.id);
   }
 
   nextRound(req: Request, res: Response): void {
@@ -230,7 +257,7 @@ export class Db {
     this.db
       .get("players")
       .getById(playerId)
-      .assign({ diced: false, openCup: false, result: [] })
+      .assign({ diced: false, openCup: false, result: [], won: false })
       .write();
   }
 
@@ -281,6 +308,7 @@ export class Db {
         waiting: true,
         roundFinished: false,
         gameFinished: false,
+        locked: false,
       })
       .write();
   }
@@ -331,8 +359,6 @@ export class Db {
     playerId: string
   ): void {
     const players = this.getPlayersFromTable(tableId);
-    const playersFinished: Player[] = [];
-    let gameFinished = false;
     this.db
       .get("tables")
       .getById(tableId)
@@ -342,49 +368,69 @@ export class Db {
     let fromPlayer: string = "";
     let playerRes: string = "";
     for (const player of players) {
-      if (player.id === playerId) {
-        playerRes = player.name;
-      }
-      if (fromPlayerId === player.id) {
-        fromPlayer = player.name;
-        this.db
-          .get("players")
-          .getById(player.id)
-          .assign({ openCup: true })
-          .write();
-      } else {
-        let dices = this.db
-          .get("players")
-          .getById(player.id)
-          .get("dices")
-          .value();
-        if (dices === 1) {
-          this.db
-            .get("players")
-            .getById(player.id)
-            .assign({ openCup: true, dices: --dices, won: true })
-            .write();
-          playersFinished.push(player);
-        } else {
-          this.db
-            .get("players")
-            .getById(player.id)
-            .assign({ openCup: true, dices: --dices })
-            .write();
-        }
-      }
-      if (playersFinished.length > 0) {
-        this.baseApp.playerIsFinished(playersFinished);
-        gameFinished = this.checkGameFinished(tableId);
-      }
       for (const di of player.result) {
         if (di === 1 || di === dice) {
           diceCount++;
         }
       }
+      if (player.id === playerId) {
+        playerRes = player.name;
+      }
+      if (fromPlayerId === player.id) {
+        fromPlayer = player.name;
+      }
+      this.db
+        .get("players")
+        .getById(player.id)
+        .assign({ openCup: true })
+        .write();
+    }
+    const successForOpener = diceCount < count;
+    const playersFinished: Player[] = [];
+    let gameFinished = false;
+    for (const player of players) {
+      const dices = this.db
+        .get("players")
+        .getById(player.id)
+        .get("dices")
+        .value();
+      let add = false;
+      // Player is opener
+      if (player.id === playerId) {
+        if (successForOpener) {
+          add = this.setOpenCupResultForPlayer(dices, player, playersFinished);
+          if (add) {
+            playersFinished.push(player);
+          }
+          continue;
+        } else {
+          continue;
+        }
+      }
+      // Player was last on row
+      if (fromPlayerId === player.id) {
+        if (!successForOpener) {
+          add = this.setOpenCupResultForPlayer(dices, player, playersFinished);
+          if (add) {
+            playersFinished.push(player);
+          }
+          continue;
+        } else {
+          continue;
+        }
+      }
+      // all other players
+      add = this.setOpenCupResultForPlayer(dices, player, playersFinished);
+      if (add) {
+        playersFinished.push(player);
+      }
+    }
+    if (playersFinished.length > 0) {
+      this.baseApp.playerIsFinished(playersFinished);
+      gameFinished = this.checkGameFinished(tableId);
     }
     const rResult = new RoundResult(
-      diceCount >= count,
+      successForOpener,
       diceCount,
       dice,
       count,
@@ -393,6 +439,28 @@ export class Db {
       fromPlayer
     );
     this.baseApp.sendRoundResult(rResult, players);
+  }
+
+  private setOpenCupResultForPlayer(
+    dices: any,
+    player: Player,
+    playersFinished: Player[]
+  ) {
+    if (dices === 1) {
+      this.db
+        .get("players")
+        .getById(player.id)
+        .assign({ openCup: true, dices: --dices, won: true })
+        .write();
+      return true;
+    } else {
+      this.db
+        .get("players")
+        .getById(player.id)
+        .assign({ openCup: true, dices: --dices })
+        .write();
+      return false;
+    }
   }
 
   checkGameFinished(tableId: string): boolean {
